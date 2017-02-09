@@ -1,4 +1,5 @@
 import React from 'react';
+import AutolevellerWidget from '../../widgets/Autoleveller';
 import AxesWidget from '../../widgets/Axes';
 import ConnectionWidget from '../../widgets/Connection';
 import ConsoleWidget from '../../widgets/Console';
@@ -15,6 +16,11 @@ import WebcamWidget from '../../widgets/Webcam';
 
 const Widget = ({ widgetid, key, ...props }) => {
     const widget = {
+        'autoleveller': () => (
+            <div data-widgetid={widgetid} key={key}>
+                <AutolevellerWidget {...props} />
+            </div>
+        ),
         'axes': () => (
             <div data-widgetid={widgetid} key={key}>
                 <AxesWidget {...props} />
