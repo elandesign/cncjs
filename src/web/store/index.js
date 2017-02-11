@@ -42,6 +42,9 @@ export const defaultState = {
         }
     },
     widgets: {
+        autoleveller: {
+            minimized: false
+        },
         axes: {
             minimized: false,
             axes: ['x', 'y', 'z'],

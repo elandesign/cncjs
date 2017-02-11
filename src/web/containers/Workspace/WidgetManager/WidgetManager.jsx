@@ -104,6 +104,13 @@ class WidgetManager extends Component {
             details: i18n._('This widget lets you monitor a webcam.'),
             visible: true,
             disabled: false
+        },
+        {
+            id: 'autoleveller',
+            caption: i18n._('Autoleveller Widget'),
+            details: i18n._('This widget lets you autolevel your GCode by probing a PCB.'),
+            visible: true,
+            disabled: false
         }
     ];
 
