@@ -1,6 +1,7 @@
 import _, { includes } from 'lodash';
 import React, { Component, PropTypes } from 'react';
 import classNames from 'classnames';
+import pubsub from 'pubsub-js';
 import Widget from '../../components/Widget';
 import i18n from '../../lib/i18n';
 import { mm2in } from '../../lib/units';
@@ -86,14 +87,65 @@ class AutolevellerWidget extends Component {
             const stepsEvery = event.target.value;
             this.setState({ stepsEvery });
         },
+        autoFill: () => {
+            const bbox = this.state.bbox;
+            this.setState({
+                startX: bbox.min.x,
+                startY: bbox.min.y,
+                endX: bbox.max.x,
+                endY: bbox.max.y
+            });
+        },
         startProbing: () => {
             // Calculate XY Points
+            // var yPoints =
             // Move to safeZ
             // Iterate over points and probe
         }
     };
 
     pubsubTokens = [];
+
+    subscribe() {
+        const tokens = [
+            pubsub.subscribe('gcode:unload', (msg) => {
+                this.setState({
+                    bbox: {
+                        min: {
+                            x: 0,
+                            y: 0
+                        },
+                        max: {
+                            x: 0,
+                            y: 0
+                        }
+                    }
+                });
+            }),
+            pubsub.subscribe('gcode:bbox', (msg, bbox) => {
+                this.setState({
+                    bbox: {
+                        min: {
+                            x: bbox.min.x,
+                            y: bbox.min.y
+                        },
+                        max: {
+                            x: bbox.max.x,
+                            y: bbox.max.y
+                        }
+                    }
+                });
+            })
+        ];
+        this.pubsubTokens = this.pubsubTokens.concat(tokens);
+    }
+
+    unsubscribe() {
+        _.each(this.pubsubTokens, (token) => {
+            pubsub.unsubscribe(token);
+        });
+        this.pubsubTokens = [];
+    }
 
     constructor() {
         super();
@@ -183,6 +235,15 @@ class AutolevellerWidget extends Component {
             safeZ: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.safeZ', 5)),
             probeZ: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.probeZ', 1))
         };
+    }
+
+    componentDidMount() {
+        this.subscribe();
+        // this.addControllerEvents();
+    }
+    componentWillUnmount() {
+        // this.removeControllerEvents();
+        this.unsubscribe();
     }
 
     render() {

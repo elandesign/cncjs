@@ -199,6 +199,14 @@ class Autoleveller extends Component {
                                 <button
                                     type="button"
                                     className="btn btn-sm btn-default"
+                                    onClick={actions.autoFill}
+                                    title={i18n._('Autofill Dimensions')}
+                                >
+                                    {i18n._('Autofill Dimensions')}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-default"
                                     onClick={actions.startProbing}
                                     disabled={!canClick}
                                     title={i18n._('Start')}

@@ -12,6 +12,7 @@ class Toolbar extends Component {
     shouldComponentUpdate(nextProps, nextState) {
         return shallowCompare(this, nextProps, nextState);
     }
+
     render() {
         const { actions } = this.props;
         const styles = {
