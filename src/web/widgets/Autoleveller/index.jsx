@@ -1,10 +1,43 @@
+import _, { includes } from 'lodash';
 import React, { Component, PropTypes } from 'react';
 import classNames from 'classnames';
 import Widget from '../../components/Widget';
 import i18n from '../../lib/i18n';
+import { mm2in } from '../../lib/units';
+import controller from '../../lib/controller';
 import store from '../../store';
 import Autoleveller from './Autoleveller';
 import styles from './index.styl';
+import {
+    // Units
+    IMPERIAL_UNITS,
+    METRIC_UNITS,
+    // Grbl
+    GRBL,
+    GRBL_ACTIVE_STATE_IDLE,
+    // Smoothie
+    SMOOTHIE,
+    SMOOTHIE_ACTIVE_STATE_IDLE,
+    // TinyG
+    TINYG,
+    TINYG_MACHINE_STATE_READY,
+    TINYG_MACHINE_STATE_STOP,
+    TINYG_MACHINE_STATE_END,
+    // Workflow
+    WORKFLOW_STATE_IDLE
+} from '../../constants';
+
+const toUnits = (units, val) => {
+    val = Number(val) || 0;
+    if (units === IMPERIAL_UNITS) {
+        val = mm2in(val).toFixed(4) * 1;
+    }
+    if (units === METRIC_UNITS) {
+        val = val.toFixed(3) * 1;
+    }
+
+    return val;
+};
 
 class AutolevellerWidget extends Component {
     static propTypes = {
@@ -16,7 +49,49 @@ class AutolevellerWidget extends Component {
         onDelete: () => {}
     };
 
-    actions = {};
+    actions = {
+        handleStartXChange: (event) => {
+            const startX = event.target.value;
+            this.setState({ startX });
+        },
+        handleStartYChange: (event) => {
+            const startY = event.target.value;
+            this.setState({ startY });
+        },
+        handleEndXChange: (event) => {
+            const endX = event.target.value;
+            this.setState({ endX });
+        },
+        handleEndYChange: (event) => {
+            const endY = event.target.value;
+            this.setState({ endY });
+        },
+        handleSafeZChange: (event) => {
+            const safeZ = event.target.value;
+            this.setState({ safeZ });
+        },
+        handleProbeZChange: (event) => {
+            const probeZ = event.target.value;
+            this.setState({ probeZ });
+        },
+        handleProbeDepthChange: (event) => {
+            const probeDepth = event.target.value;
+            this.setState({ probeDepth });
+        },
+        handleProbeFeedrateChange: (event) => {
+            const probeFeedrate = event.target.value;
+            this.setState({ probeFeedrate });
+        },
+        handleStepsEveryChange: (event) => {
+            const stepsEvery = event.target.value;
+            this.setState({ stepsEvery });
+        },
+        startProbing: () => {
+            // Calculate XY Points
+            // Move to safeZ
+            // Iterate over points and probe
+        }
+    };
 
     pubsubTokens = [];
 
@@ -27,22 +102,98 @@ class AutolevellerWidget extends Component {
 
     componentDidUpdate(prevProps, prevState) {
         const {
-            minimized
+            minimized, startX, startY, endX, endY, stepsEvery, probeDepth, probeFeedrate, safeZ, probeZ
         } = this.state;
 
         store.set('widgets.autoleveller.minimized', minimized);
+        store.set('widgets.autoleveller.startX', startX);
+        store.set('widgets.autoleveller.startY', startY);
+        store.set('widgets.autoleveller.endX', endX);
+        store.set('widgets.autoleveller.endY', endY);
+        store.set('widgets.autoleveller.safeZ', safeZ);
+        store.set('widgets.autoleveller.probeZ', probeZ);
+        store.set('widgets.autoleveller.stepsEvery', stepsEvery);
+        store.set('widgets.autoleveller.probeDepth', probeDepth);
+        store.set('widgets.autoleveller.probeFeedrate', probeFeedrate);
+    }
+
+    canClick() {
+        const { port, workflowState } = this.state;
+        const controllerType = this.state.controller.type;
+        const controllerState = this.state.controller.state;
+
+        if (!port) {
+            return false;
+        }
+        if (workflowState !== WORKFLOW_STATE_IDLE) {
+            return false;
+        }
+        if (controllerType === GRBL) {
+            const activeState = _.get(controllerState, 'status.activeState');
+            const states = [
+                GRBL_ACTIVE_STATE_IDLE
+            ];
+            if (!includes(states, activeState)) {
+                return false;
+            }
+        }
+        if (controllerType === SMOOTHIE) {
+            const activeState = _.get(controllerState, 'status.activeState');
+            const states = [
+                SMOOTHIE_ACTIVE_STATE_IDLE
+            ];
+            if (!includes(states, activeState)) {
+                return false;
+            }
+        }
+        if (controllerType === TINYG) {
+            const machineState = _.get(controllerState, 'sr.machineState');
+            const states = [
+                TINYG_MACHINE_STATE_READY,
+                TINYG_MACHINE_STATE_STOP,
+                TINYG_MACHINE_STATE_END
+            ];
+            if (!includes(states, machineState)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     getDefaultState() {
         return {
             minimized: store.get('widgets.autoleveller.minimized', false),
             isFullscreen: false,
-            canClick: true // Defaults to true
+            canClick: true, // Defaults to true
+            port: controller.port,
+            units: METRIC_UNITS,
+            controller: {
+                type: controller.type,
+                state: controller.state
+            },
+            workflowState: controller.workflowState,
+            startX: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.startX', 0)),
+            startY: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.startY', 0)),
+            endX: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.endX', 50)),
+            endY: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.endY', 50)),
+            stepsEvery: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.stepsEvery', 5)),
+            probeDepth: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.probeDepth', -3)),
+            probeFeedrate: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.probeFeedrate', 20)),
+            safeZ: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.safeZ', 5)),
+            probeZ: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.probeZ', 1))
         };
     }
 
     render() {
         const { minimized, isFullscreen } = this.state;
+        const state = {
+            ...this.state,
+            canClick: this.canClick()
+        };
+        const actions = {
+            ...this.actions
+        };
 
         return (
             <Widget fullscreen={isFullscreen}>
@@ -87,7 +238,10 @@ class AutolevellerWidget extends Component {
                         { [styles.hidden]: minimized }
                     )}
                 >
-                    <Autoleveller />
+                    <Autoleveller
+                        state={state}
+                        actions={actions}
+                    />
                 </Widget.Content>
             </Widget>
         );
