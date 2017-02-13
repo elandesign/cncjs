@@ -12,9 +12,10 @@ class Toolbar extends Component {
     shouldComponentUpdate(nextProps, nextState) {
         return shallowCompare(this, nextProps, nextState);
     }
-
     render() {
-        const { actions } = this.props;
+        const { state, actions } = this.props;
+        const { gcodeLoaded } = state;
+        console.log(state);
         const styles = {
             toolbar: {
                 position: 'absolute',
@@ -31,10 +32,12 @@ class Toolbar extends Component {
                     title={i18n._('More')}
                     id="autofill-dropdown"
                     pullRight
+                    disabled={!gcodeLoaded}
                 >
                     <MenuItem
                         eventKey="autofill"
                         onSelect={actions.autoFill}
+                        disabled={!gcodeLoaded}
                     >
                         {i18n._('Autofill Dimensions')}
                     </MenuItem>

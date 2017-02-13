@@ -106,23 +106,151 @@ class AutolevellerWidget extends Component {
 
     pubsubTokens = [];
 
+    controllerEvents = {
+        'Grbl:state': (state) => {
+            const { parserstate } = { ...state };
+            const { modal = {} } = { ...parserstate };
+            const units = {
+                'G20': IMPERIAL_UNITS,
+                'G21': METRIC_UNITS
+            }[modal.units] || this.state.units;
+
+            let {
+                probeDepth,
+                probeFeedrate,
+                tlo,
+                retractionDistance
+            } = store.get('widgets.probe');
+            if (units === IMPERIAL_UNITS) {
+                probeDepth = mm2in(probeDepth).toFixed(4) * 1;
+                probeFeedrate = mm2in(probeFeedrate).toFixed(4) * 1;
+                tlo = mm2in(tlo).toFixed(4) * 1;
+                retractionDistance = mm2in(retractionDistance).toFixed(4) * 1;
+            }
+            if (units === METRIC_UNITS) {
+                probeDepth = Number(probeDepth).toFixed(3) * 1;
+                probeFeedrate = Number(probeFeedrate).toFixed(3) * 1;
+                tlo = Number(tlo).toFixed(3) * 1;
+                retractionDistance = Number(retractionDistance).toFixed(3) * 1;
+            }
+
+            if (this.state.units !== units) {
+                // Set `this.unitsDidChange` to true if the unit has changed
+                this.unitsDidChange = true;
+            }
+
+            this.setState({
+                units: units,
+                controller: {
+                    type: GRBL,
+                    state: state
+                },
+                probeDepth: probeDepth,
+                probeFeedrate: probeFeedrate,
+                tlo: tlo,
+                retractionDistance: retractionDistance
+            });
+        },
+        'Smoothie:state': (state) => {
+            const { parserstate } = { ...state };
+            const { modal = {} } = { ...parserstate };
+            const units = {
+                'G20': IMPERIAL_UNITS,
+                'G21': METRIC_UNITS
+            }[modal.units] || this.state.units;
+
+            let {
+                probeDepth,
+                probeFeedrate,
+                tlo,
+                retractionDistance
+            } = store.get('widgets.probe');
+            if (units === IMPERIAL_UNITS) {
+                probeDepth = mm2in(probeDepth).toFixed(4) * 1;
+                probeFeedrate = mm2in(probeFeedrate).toFixed(4) * 1;
+                tlo = mm2in(tlo).toFixed(4) * 1;
+                retractionDistance = mm2in(retractionDistance).toFixed(4) * 1;
+            }
+            if (units === METRIC_UNITS) {
+                probeDepth = Number(probeDepth).toFixed(3) * 1;
+                probeFeedrate = Number(probeFeedrate).toFixed(3) * 1;
+                tlo = Number(tlo).toFixed(3) * 1;
+                retractionDistance = Number(retractionDistance).toFixed(3) * 1;
+            }
+
+            if (this.state.units !== units) {
+                // Set `this.unitsDidChange` to true if the unit has changed
+                this.unitsDidChange = true;
+            }
+
+            this.setState({
+                units: units,
+                controller: {
+                    type: SMOOTHIE,
+                    state: state
+                },
+                probeDepth: probeDepth,
+                probeFeedrate: probeFeedrate,
+                tlo: tlo,
+                retractionDistance: retractionDistance
+            });
+        },
+        'TinyG:state': (state) => {
+            const { sr } = { ...state };
+            const { modal = {} } = sr;
+            const units = {
+                'G20': IMPERIAL_UNITS,
+                'G21': METRIC_UNITS
+            }[modal.units] || this.state.units;
+
+            let {
+                probeDepth,
+                probeFeedrate,
+                tlo,
+                retractionDistance
+            } = store.get('widgets.probe');
+            if (units === IMPERIAL_UNITS) {
+                probeDepth = mm2in(probeDepth).toFixed(4) * 1;
+                probeFeedrate = mm2in(probeFeedrate).toFixed(4) * 1;
+                tlo = mm2in(tlo).toFixed(4) * 1;
+                retractionDistance = mm2in(retractionDistance).toFixed(4) * 1;
+            }
+            if (units === METRIC_UNITS) {
+                probeDepth = Number(probeDepth).toFixed(3) * 1;
+                probeFeedrate = Number(probeFeedrate).toFixed(3) * 1;
+                tlo = Number(tlo).toFixed(3) * 1;
+                retractionDistance = Number(retractionDistance).toFixed(3) * 1;
+            }
+
+            if (this.state.units !== units) {
+                // Set `this.unitsDidChange` to true if the unit has changed
+                this.unitsDidChange = true;
+            }
+
+            this.setState({
+                units: units,
+                controller: {
+                    type: TINYG,
+                    state: state
+                },
+                probeDepth: probeDepth,
+                probeFeedrate: probeFeedrate,
+                tlo: tlo,
+                retractionDistance: retractionDistance
+            });
+        }
+    };
+
     subscribe() {
         const tokens = [
             pubsub.subscribe('gcode:unload', (msg) => {
+                console.log('gcode:unload');
                 this.setState({
-                    bbox: {
-                        min: {
-                            x: 0,
-                            y: 0
-                        },
-                        max: {
-                            x: 0,
-                            y: 0
-                        }
-                    }
+                    bbox: undefined
                 });
             }),
             pubsub.subscribe('gcode:bbox', (msg, bbox) => {
+                console.log('gcode:bbox');
                 this.setState({
                     bbox: {
                         min: {
@@ -145,6 +273,18 @@ class AutolevellerWidget extends Component {
             pubsub.unsubscribe(token);
         });
         this.pubsubTokens = [];
+    }
+    addControllerEvents() {
+        Object.keys(this.controllerEvents).forEach(eventName => {
+            const callback = this.controllerEvents[eventName];
+            controller.on(eventName, callback);
+        });
+    }
+    removeControllerEvents() {
+        Object.keys(this.controllerEvents).forEach(eventName => {
+            const callback = this.controllerEvents[eventName];
+            controller.off(eventName, callback);
+        });
     }
 
     constructor() {
@@ -224,6 +364,7 @@ class AutolevellerWidget extends Component {
                 type: controller.type,
                 state: controller.state
             },
+            bbox: undefined,
             workflowState: controller.workflowState,
             startX: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.startX', 0)),
             startY: toUnits(METRIC_UNITS, store.get('widgets.autoleveller.startY', 0)),
@@ -250,7 +391,8 @@ class AutolevellerWidget extends Component {
         const { minimized, isFullscreen } = this.state;
         const state = {
             ...this.state,
-            canClick: this.canClick()
+            canClick: this.canClick(),
+            gcodeLoaded: _.isObject(this.state.bbox)
         };
         const actions = {
             ...this.actions

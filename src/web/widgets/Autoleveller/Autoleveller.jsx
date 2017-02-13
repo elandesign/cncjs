@@ -29,6 +29,7 @@ class Autoleveller extends Component {
         return (
             <div>
                 <Toolbar {...this.props} />
+                <div className="form-group" />
                 <div className="row no-gutters">
                     <div className="col-xs-6" style={{ paddingRight: 5 }}>
                         <div className="form-group">
@@ -196,14 +197,6 @@ class Autoleveller extends Component {
                     <div className="col-xs-12">
                         <div className="btn-toolbar">
                             <div className="btn-group" role="group">
-                                <button
-                                    type="button"
-                                    className="btn btn-sm btn-default"
-                                    onClick={actions.autoFill}
-                                    title={i18n._('Autofill Dimensions')}
-                                >
-                                    {i18n._('Autofill Dimensions')}
-                                </button>
                                 <button
                                     type="button"
                                     className="btn btn-sm btn-default"
